@@ -3,7 +3,7 @@ requires      = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name    = "twpapainter"
+name    = "twpazer"
 authors = [
     {name  = "Andrea Giachero", email = "andrea.giachero@mib.infn.it"},
 ]
