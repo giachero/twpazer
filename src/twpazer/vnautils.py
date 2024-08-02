@@ -40,7 +40,6 @@ def get_bandwidth(freq, data, threshold):
     
     return f1, f2
 
-    
 
 def estimate_ripple(f, data, fcenter, deltaf):
 

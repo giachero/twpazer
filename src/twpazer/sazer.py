@@ -14,8 +14,8 @@ import numpy as np
 import pylab as plt
 import os, errno, sys
 
-from dartwarslab.base import sreader
-
+#from dartwarslab.base import sreader
+from twpazer.sreader import sidreader
 
 
 whoami = lambda: sys._getframe(1).f_code.co_name
@@ -111,9 +111,9 @@ class Z0zer(object):
 
             print ('({name}) Compute {tag}'.format(name = whoami(), tag=tag))
             
-            sid  = sreader(data = sreader(filename.get(tag,'C')).unique('merge'),
-                           fmin = self.__pars['fmin'] if 'fmin' in self.__pars else None,
-                           fmax = self.__pars['fmax'] if 'fmax' in self.__pars else None)
+            sid  = sidreader(data = sidreader(filename.get(tag,'C')).unique('merge'),
+                             fmin = self.__pars['fmin'] if 'fmin' in self.__pars else None,
+                             fmax = self.__pars['fmax'] if 'fmax' in self.__pars else None)
             
             sid.compute('LC')
             
@@ -131,19 +131,48 @@ class Z0zer(object):
         #idxmax = np.argmin(abs(f-self.__pars['fmax'])) if 'fmax' in self.__pars else None 
         #idxmin = np.argmin(abs(f-self.__pars['fmin'])) if 'fmin' in self.__pars else None 
 
-        p      = np.poly1d(np.polyfit(f, X/self.__pars['ncell'], self.__pars['npol']))
         f_fit  = np.linspace(np.min(f),np.max(f), self.__pars['nfit']);
-        
         if l not in self.__data:
             self.__data.setdefault(l, {})
 
+        print('({name}) Fitting {x} vs freq with {model}'.format(name = whoami(), x=tag, model=self.__pars['fittype'+tag]))
+        if 'fittype'+tag not in self.__pars or self.__pars['fittype'+tag]=='poly': 
+
+            p      = np.poly1d(np.polyfit(f, X/self.__pars['ncell'], self.__pars['npol']))
+
+            Xfit = p(f_fit)
+            X0   = p(0)
+            p    = p.coef
+            
+        elif 'fittype'+tag in self.__pars and self.__pars['fittype'+tag]=='model'+tag:
+
+            def modelC(x, C, Lf):
+                return C/(1-((2*np.pi*x)**2*Lf*C)/3)
+
+            def modelL(x, C, L):
+                return L+((2*np.pi*x*L)**2*C)/3
+
+            model = {'modelC': modelC,
+                     'modelL': modelL}.get('model'+tag)
+
+            from scipy.optimize import curve_fit
+            guess = np.array([20e-12, 200e-12])
+            popt, pcov = curve_fit(model, f, X/self.__pars['ncell'], guess)
+
+            Xfit = model(f_fit, *popt)
+            X0   = model(0, *popt)
+            p    = popt
+            
+        else:
+            pass
+
         self.__data[l].setdefault(tag,{})
         self.__data[l][tag].update({tag       : X/self.__pars['ncell'],
-                                    tag+'fit' : p(f_fit),
-                                    tag+'0'   : p(0),
+                                    tag+'fit' : Xfit,
+                                    tag+'0'   : X0,
                                     'freq'    : f,
                                     'freq_fit': f_fit,
-                                    'p'       : p.coef})
+                                    'p'       : p})
         
         return
 
@@ -168,17 +197,15 @@ class Z0zer(object):
         X0=[self.__data[l][tag][tag+'0'] for l in ls]
                 
 
-        if 'fittype'+tag not in self.__pars or self.__pars['fittype'+tag]=='poly': 
-            print('({name}) Performing linear fit'.format(name = whoami()))
             
-            p      = np.poly1d(np.polyfit(ls, X0, 2))
-            X0_fit = p(ls_fit)
-            X00    = p(0) 
-            
-            print('({name}) {tag}0 from polynomial fit : {tag} = {X:.2f} {u}'.format(name = whoami(),
-                                                                                     tag  = tag,
-                                                                                     X    = X00*self.__pars[tag+'norm'],
-                                                                                     u    = self.__pars[tag+'unit']))
+        p      = np.poly1d(np.polyfit(ls, X0, 2))
+        X0_fit = p(ls_fit)
+        X00    = p(0) 
+        
+        print('({name}) {tag}0 from polynomial fit : {tag} = {X:.2f} {u}'.format(name = whoami(),
+                                                                                 tag  = tag,
+                                                                                 X    = X00*self.__pars[tag+'norm'],
+                                                                                 u    = self.__pars[tag+'unit']))
 
         if 'Z0fit' not in self.__data: 
             self.__data.setdefault('Z0fit', {})
