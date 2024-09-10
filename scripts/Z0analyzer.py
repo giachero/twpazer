@@ -42,8 +42,10 @@ def Z0analyzer(cfg):
                 print ('({name}) Path {path} created'.format(name = whoami(), path=cfg[c][d]))
                 
         Z0res=Z0zer(os.path.join(cfg[c]['pathfile'], cfg[c]['filenameL']),
-                os.path.join(cfg[c]['pathfile'], cfg[c]['filenameC']),
+                    os.path.join(cfg[c]['pathfile'], cfg[c]['filenameC']),
                     **{k: cfg[c][k] for k in cfg[c] if k not in ['filenameL','filenameC']})
+        
+        target=Z0res.pars()['target']
         
         import warnings
         warnings.filterwarnings("ignore")
@@ -65,10 +67,15 @@ def Z0analyzer(cfg):
         if 'Ztarget' in cfg[c] and cfg[c]['Ztarget'] and isinstance(cfg[c]['Ztarget'], list): 
             res=Z0res.results()
 
-            cell=CellZer(l = res['Z0fit']['lfit'],
-                         L = res['Z0fit']['L0fit'],             
-                         C = res['Z0fit']['C0fit'],              
-                         Z = np.sqrt(res['Z0fit']['L0fit']/res['Z0fit']['C0fit']))
+
+            print('target', target)
+
+            cell=CellZer(target = res['Z0fit'][target+'fit'],
+                         L      = res['Z0fit']['L0fit'],             
+                         C      = res['Z0fit']['C0fit'],              
+                         Z      = np.sqrt(res['Z0fit']['L0fit']/res['Z0fit']['C0fit']),
+                         tname  = target,
+                         tunit  = Z0res.pars()['tunit'])
 
             cell.update(Lk = Z0res.pars()['Lk']*1e-12, w = Z0res.pars()['w'])
 
@@ -77,8 +84,8 @@ def Z0analyzer(cfg):
                 cell.add_Z0_target(Z)
                 
             
-            if 'ltarget' in cfg[c] and cfg[c]['ltarget'] and isinstance(cfg[c]['ltarget'], list): 
-                for l in cfg[c]['ltarget']:
+            if target in cfg[c] and cfg[c][target] and isinstance(cfg[c][target], list): 
+                for l in cfg[c][target]:
                     cell.add_finger_length_target(l)
 
             cell.compute()
@@ -99,11 +106,13 @@ def Z0analyzer(cfg):
                     ytext=plt.gca().get_ylim()[1]-0.25*(plt.gca().get_ylim()[1]-plt.gca().get_ylim()[0])
                     plt.text(l+0.50,
                              Z0+4,
-                             '$\\ell = {l:0.2f}\\,\\mu$m'.format(l=l))
+                             '{tvar} = {l:0.2f} {tunit}'.format(tvar  = Z0res.pars()['tvar'],
+                                                                tunit = Z0res.pars()['tunit'],
+                                                                l     = l))
                 
             
             for e in ['svg', 'pdf']:
-                savename=os.path.join(cfg[c]['saveplot'], 'trend_Z_vs_l_'+Z0res._Z0zer__create_savename()+'_target.'+e)
+                savename=os.path.join(cfg[c]['saveplot'], 'trend_Z_vs_'+target+'_'+Z0res._Z0zer__create_savename()+'_target.'+e)
                 print ('({name}) Saving plot {savename}'.format(name = whoami(), savename=savename))
                 plt.gcf().savefig(savename, bbox_inches='tight', transparent=True)
                 
@@ -119,8 +128,8 @@ def Z0analyzer(cfg):
                                      'Lfit': Z0res.results()['Z0fit']['L0fit'],
                                      'C'   : Z0res.results()['Z0fit']['C0'], 
                                      'Cfit': Z0res.results()['Z0fit']['C0fit'],
-                                     'lfit': Z0res.results()['Z0fit']['lfit'],
-                                     'l'   : Z0res.results()['Z0fit']['l']})
+                                     target+'fit': Z0res.results()['Z0fit'][target+'fit'],
+                                     target      : Z0res.results()['Z0fit'][target]})
 
             
     return

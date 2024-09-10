@@ -9,7 +9,7 @@ def get_compensation_factor(freq, data, fcenter, deltaf=1):
     frange = freq[val2idx(fcenter-deltaf, freq):val2idx(fcenter+deltaf, freq)]
     drange = data[val2idx(fcenter-deltaf, freq):val2idx(fcenter+deltaf, freq)]
 
-    dataf = scipy.signal.savgol_filter(list(drange), 500, 3)
+    dataf = scipy.signal.savgol_filter(list(np.ravel(drange)), 200, 3)
 
     newdata = drange-dataf
     idx     = val2idx(frange, fcenter)
@@ -52,3 +52,21 @@ def estimate_ripple(f, data, fcenter, deltaf):
     rippleMm  = np.abs(np.max(newdata[idxmin:idxmax])-np.min(newdata[idxmin:idxmax]))
     
     return ripplestd, rippleMm
+
+
+def estimate_ripple2(f, data, f1, f2):
+
+    fmin = np.min([f1, f2])
+    fmax = np.max([f1, f2])
+    
+    idxmin = val2idx(f1, f)
+    idxmax = val2idx(f2, f)
+
+
+    newdata = data - scipy.signal.savgol_filter(list(data), 500, 3)
+    
+    ripplestd = np.std(newdata[idxmin:idxmax])
+    rippleMm  = np.max(newdata[idxmin:idxmax])-np.min(newdata[idxmin:idxmax])
+
+    return ripplestd, rippleMm
+

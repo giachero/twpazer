@@ -41,17 +41,14 @@ class Z0zer(object):
                      'Lunit'    : 'H',
                      'Cunit'    : 'C',
                      'Zunit'    : '$\\Omega$',
-                     'barunit'  : '$\mu$m',
-                     'barvar'   : '$\ell$',
-                     'barname'  : 'Finger Length',
+                     'tunit'    : '$\mu$m',
+                     'tvar'     : '$\ell$',
+                     'tname'    : 'Finger Length',
                      'Ldigits'  : 3,
                      'Cdigits'  : 1,
                      'Zdigits'  : 1,
-                     'xdigits'  : 0,
                      'issave'   : False,
-                     'isfit'    : True,
-                     'fittypeC' : 'poly',
-                     'fittypeL' : 'poly'} 
+                     'isfit'    : True,} 
 
         for filename, tag in zip([filenameL, filenaleC],['filenameL', 'filenameC']):
             if not os.path.exists(filename):
@@ -135,52 +132,48 @@ class Z0zer(object):
         if l not in self.__data:
             self.__data.setdefault(l, {})
 
-        print('({name}) Fitting {x} vs freq with {model}'.format(name = whoami(), x=tag, model=self.__pars['fittype'+tag]))
-        if 'fittype'+tag not in self.__pars or self.__pars['fittype'+tag]=='poly': 
-
-            p      = np.poly1d(np.polyfit(f, X/self.__pars['ncell'], self.__pars['npol']))
-
-            Xfit = p(f_fit)
-            X0   = p(0)
-            p    = p.coef
+        print('({name}) Fitting {x} vs freq'.format(name = whoami(), x=tag))
             
-        elif 'fittype'+tag in self.__pars and self.__pars['fittype'+tag]=='model'+tag:
 
-            def modelC(x, C, Lf):
-                return C/(1-((2*np.pi*x)**2*Lf*C)/3)
 
-            def modelL(x, C, L):
-                return L+((2*np.pi*x*L)**2*C)/3
+        def modelC(x, C, L):
+            #return C/(1-((2*np.pi*x)**2*L*C)/3)
+            return C/(1 - ((2*np.pi*x)**2*L*C)/3 -  ((2*np.pi*x)**3*(L*C)**2)/45 )
+        
+        def modelL(x, C, L):
+            return L+((2*np.pi*x*L)**2*C)/3
 
-            model = {'modelC': modelC,
-                     'modelL': modelL}.get('model'+tag)
+        model = {'modelC': modelC,
+                 'modelL': modelL}.get('model'+tag)
 
-            from scipy.optimize import curve_fit
-            guess = np.array([20e-12, 200e-12])
-            popt, pcov = curve_fit(model, f, X/self.__pars['ncell'], guess)
-
-            Xfit = model(f_fit, *popt)
-            X0   = model(0, *popt)
-            p    = popt
-            
-        else:
-            pass
-
+        
+        from scipy.optimize import curve_fit
+        guess = {'modelC': np.array([20e-15, 60e-12]),
+                 'modelL': np.array([20e-15, 60e-12])}.get('model'+tag)
+        
+        #param_bounds=([-np.inf, 2*(self.__pars['Lk']-5)*1e-12], [np.inf, 2*(self.__pars['Lk']+10)*1e-12]) 
+        #popt, pcov = curve_fit(model, f, X/self.__pars['ncell'], guess)
+        
+        from scipy.optimize import curve_fit
+        popt, pcov = curve_fit(model, f, X, p0=guess)
+        
+        Xfit = model(f_fit, *popt)
+        X0   = model(0, *popt)
+        p    = popt
+        
         self.__data[l].setdefault(tag,{})
         self.__data[l][tag].update({tag       : X/self.__pars['ncell'],
-                                    tag+'fit' : Xfit,
-                                    tag+'0'   : X0,
+                                    tag+'fit' : Xfit/self.__pars['ncell'],
+                                    tag+'0'   : X0/self.__pars['ncell'],
                                     'freq'    : f,
                                     'freq_fit': f_fit,
-                                    'p'       : p})
-        
+                                    'p'       : p/self.__pars['ncell']})
         return
 
 
 
     def __fitLC(self):
-
-
+        
         for tag in ['L', 'C']:
             print ('({name}) Fitting {tag}0'.format(name = whoami(), tag=tag))
             self.__fitX(tag)
@@ -276,9 +269,9 @@ class Z0zer(object):
         plt.xlabel('Frequency $f$ [MHz]')
 
         #create_cbar(sm, 1, r'Finger Length $\ell$ [$\mu$m]')
-        create_cbar(sm, 1, r'{barname} {barvar} [{barunit}]'.format(barname = self.__pars['barname'],
-                                                                    barvar  = self.__pars['barvar'],
-                                                                    barunit = self.__pars['barunit']))
+        create_cbar(sm, 1, r'{tname} {tvar} [{tunit}]'.format(tname = self.__pars['tname'],
+                                                              tvar  = self.__pars['tvar'],
+                                                              tunit = self.__pars['tunit']))
         
         self.__save_plot(self.__create_savename('scan_{X}_vs_f_vs_{w}_{post}'.format(X=lut[tag],
                                                                                      w=self.__pars['target'],
@@ -300,9 +293,9 @@ class Z0zer(object):
             
         plt.title(self.__create_title())
         plt.ylabel('${s} [${u}$]$'.format(s=tag, u=self.__pars[unit]))
-        plt.xlabel(r'{barname} {barvar} [{barunit}]'.format(barname = self.__pars['barname'],
-                                                            barvar  = self.__pars['barvar'],
-                                                            barunit = self.__pars['barunit']))
+        plt.xlabel(r'{tname} {tvar} [{tunit}]'.format(tname = self.__pars['tname'],
+                                                      tvar  = self.__pars['tvar'],
+                                                      tunit = self.__pars['tunit']))
 
         plt.ticklabel_format(useOffset=False, style='plain', axis='y')
         #plt.gca().get_yaxis().get_major_formatter().set_scientific(False)
@@ -346,17 +339,20 @@ class CellZer(object):
 
     '''
 
-    def __init__(self, l, L, C, Z, **kwargs):
+    def __init__(self, target, L, C, Z, **kwargs):
 
         self.__data=dict()
         self.__pars=dict()
-        for t, v in zip(['l','L', 'C', 'Z',], [l, L, C, Z]):
+        for t, v in zip(['target','L', 'C', 'Z'], [target, L, C, Z]):
             self.__data.update({t:v})
 
 
-        self.__labels = ['Z0target', 'l'   , 'Z0'   ,'L'   , 'C'   ]
-        self.__units  = ['[Ohm]'   , '[um]', '[Ohm]','[pH]', '[fF]']
-        self.__norms  = [ 1        ,  1    ,  1,      1e12 ,  1e15 ] 
+        tname = kwargs['tname'] if 'tname' in kwargs and kwargs['tname'] else 'target' 
+        tunit = kwargs['tunit'] if 'tunit' in kwargs and kwargs['tunit'] else '[au]' 
+
+        self.__labels = ['Z0target', tname, 'Z0'   ,'L'   , 'C'   ]
+        self.__units  = ['[Ohm]'   , tunit, '[Ohm]','[pH]', '[fF]']
+        self.__norms  = [ 1        , 1    ,  1,      1e12 ,  1e15 ] 
 
             
         self.__pars.update(kwargs)
@@ -381,7 +377,7 @@ class CellZer(object):
     def add_Z0_target(self, Z0target):
 
         idx = np.argmin(np.abs(Z0target-self.__data['Z']))
-        t   = [self.__data['l'][idx], self.__data['L'][idx], self.__data['C'][idx]]
+        t   = [self.__data['target'][idx], self.__data['L'][idx], self.__data['C'][idx]]
 
         t.insert(1, np.sqrt(t[1]/t[2]))
                 
@@ -391,7 +387,7 @@ class CellZer(object):
 
     def add_finger_length_target(self, ltarget):
 
-        idx = np.argmin(np.abs(ltarget-self.__data['l']))
+        idx = np.argmin(np.abs(ltarget-self.__data['target']))
         Z0 = np.sqrt(self.__data['L'][idx]/self.__data['C'][idx])
         self.add_Z0_target(Z0)
         
