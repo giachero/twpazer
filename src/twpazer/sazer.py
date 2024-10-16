@@ -128,31 +128,47 @@ class Z0zer(object):
         #idxmax = np.argmin(abs(f-self.__pars['fmax'])) if 'fmax' in self.__pars else None 
         #idxmin = np.argmin(abs(f-self.__pars['fmin'])) if 'fmin' in self.__pars else None 
 
-        f_fit  = np.linspace(np.min(f),np.max(f), self.__pars['nfit']);
+        #f_fit  = np.linspace(np.min(f),np.max(f), self.__pars['nfit']);
+        f_fit  = np.linspace(0, np.max(f), self.__pars['nfit']);
+        #f_fit  = np.concatenate([[0], f_fit])
+        
         if l not in self.__data:
             self.__data.setdefault(l, {})
 
-        print('({name}) Fitting {x} vs freq'.format(name = whoami(), x=tag))
+        print('({name}) Fitting {x} vs freq, target value = {l}'.format(name = whoami(), x=tag, l=l))
             
 
 
-        def modelC(x, C, L):
-            #return C/(1-((2*np.pi*x)**2*L*C)/3)
-            return C/(1 - ((2*np.pi*x)**2*L*C)/3 -  ((2*np.pi*x)**3*(L*C)**2)/45 )
-        
-        def modelL(x, C, L):
-            return L+((2*np.pi*x*L)**2*C)/3
+        def modelC(x, C, L, n, terms=0):
+            return C*n*45/(45 - 15*(2*np.pi*x*n)**2*(L*C)
+                              -    (2*np.pi*x*n)**4*(L*C)**2
+                           )
+            
+        def modelL(x, C, L, n, terms=0):
+            if abs(terms)==0:
+                return  L*n*(1 + 1/3  *(2*np.pi*x*n)**2*L*C)  
 
+            elif abs(terms)==1: 
+                return  L*n*(1 + 1/3  *(2*np.pi*x*n)**2*L*C
+                               + 2/5  *(2*np.pi*x*n)**4*(L*C)**2)  
+            
+            elif abs(terms)>1:
+                return  L*n*(1 + 1/3  *(2*np.pi*x*n)**2*L*C
+                               + 2/5  *(2*np.pi*x*n)**4*(L*C)**2
+                               + 17/35*(2*np.pi*x*n)**6*(L*C)**3
+                             )  
+            
+        
         model = {'modelC': modelC,
                  'modelL': modelL}.get('model'+tag)
 
+        guess = {'modelC': np.array([10e-15, 60e-15] if 'Cguess' not in self.__pars else self.__pars['Cguess']),
+                 'modelL': np.array([10e-12, 40e-12] if 'Lguess' not in self.__pars else self.__pars['Lguess'])}.get('model'+tag)
         
-        from scipy.optimize import curve_fit
-        guess = {'modelC': np.array([20e-15, 60e-12]),
-                 'modelL': np.array([20e-15, 60e-12])}.get('model'+tag)
-        
-        #param_bounds=([-np.inf, 2*(self.__pars['Lk']-5)*1e-12], [np.inf, 2*(self.__pars['Lk']+10)*1e-12]) 
-        #popt, pcov = curve_fit(model, f, X/self.__pars['ncell'], guess)
+
+        #if 'model'+tag == 'modelC':
+        from functools import partial
+        model = partial(model, n=self.__pars['ncell'], terms=self.__pars['nterms'] if 'nterms' in self.__pars else 1)
         
         from scipy.optimize import curve_fit
         popt, pcov = curve_fit(model, f, X, p0=guess)
@@ -232,8 +248,6 @@ class Z0zer(object):
 
         return 
     
-
-
 
     def plot(self, tag='Z'):
         return {'Z' : self.__plotX,

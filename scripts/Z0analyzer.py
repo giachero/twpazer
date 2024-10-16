@@ -28,7 +28,7 @@ def Z0analyzer(cfg):
     #cfg = file2dic(cfgfile , writer='json').read()
 
     for c in cfg:
-        print ('({name}) Processing simulation \"sim\"'.format(name = whoami(), sim=c))
+        print ('({name}) Processing simulation \"{sim}\"'.format(name = whoami(), sim=c))
 
         cfg[c]['simpath']=os.path.join(cfg[c]['pathfile'], c)
         if not os.path.exists(cfg[c]['simpath']):
