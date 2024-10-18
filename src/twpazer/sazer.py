@@ -14,7 +14,6 @@ import numpy as np
 import pylab as plt
 import os, errno, sys
 
-#from dartwarslab.base import sreader
 from twpazer.sreader import sidreader
 
 
@@ -125,65 +124,26 @@ class Z0zer(object):
 
     def __computeX(self, f, X, l, tag):
         
-        #idxmax = np.argmin(abs(f-self.__pars['fmax'])) if 'fmax' in self.__pars else None 
-        #idxmin = np.argmin(abs(f-self.__pars['fmin'])) if 'fmin' in self.__pars else None 
-
-        #f_fit  = np.linspace(np.min(f),np.max(f), self.__pars['nfit']);
-        f_fit  = np.linspace(0, np.max(f), self.__pars['nfit']);
-        #f_fit  = np.concatenate([[0], f_fit])
         
         if l not in self.__data:
             self.__data.setdefault(l, {})
 
-        print('({name}) Fitting {x} vs freq, target value = {l}'.format(name = whoami(), x=tag, l=l))
-            
-
-
-        def modelC(x, C, L, n, terms=0):
-            return C*n*45/(45 - 15*(2*np.pi*x*n)**2*(L*C)
-                              -    (2*np.pi*x*n)**4*(L*C)**2
-                           )
-            
-        def modelL(x, C, L, n, terms=0):
-            if abs(terms)==0:
-                return  L*n*(1 + 1/3  *(2*np.pi*x*n)**2*L*C)  
-
-            elif abs(terms)==1: 
-                return  L*n*(1 + 1/3  *(2*np.pi*x*n)**2*L*C
-                               + 2/5  *(2*np.pi*x*n)**4*(L*C)**2)  
-            
-            elif abs(terms)>1:
-                return  L*n*(1 + 1/3  *(2*np.pi*x*n)**2*L*C
-                               + 2/5  *(2*np.pi*x*n)**4*(L*C)**2
-                               + 17/35*(2*np.pi*x*n)**6*(L*C)**3
-                             )  
-            
+        print('({name}) Fitting {x} vs freq, {target} = {l}'.format(name = whoami(), x=tag, l=l, target=self.__pars['target']))
         
-        model = {'modelC': modelC,
-                 'modelL': modelL}.get('model'+tag)
 
         guess = {'modelC': np.array([10e-15, 60e-15] if 'Cguess' not in self.__pars else self.__pars['Cguess']),
                  'modelL': np.array([10e-12, 40e-12] if 'Lguess' not in self.__pars else self.__pars['Lguess'])}.get('model'+tag)
         
 
-        #if 'model'+tag == 'modelC':
-        from functools import partial
-        model = partial(model, n=self.__pars['ncell'], terms=self.__pars['nterms'] if 'nterms' in self.__pars else 1)
+        fitter = CellFitter(ncells = self.__pars['ncell'],
+                            nterms = self.__pars['nterms'] if 'nterms' in self.__pars else 1,
+                            guess  = guess,
+                            nfit   = self.__pars['nfit'])
         
-        from scipy.optimize import curve_fit
-        popt, pcov = curve_fit(model, f, X, p0=guess)
+
+        fitter.fit(f, X, tag=tag)
+        self.__data[l].setdefault(tag, fitter.results())
         
-        Xfit = model(f_fit, *popt)
-        X0   = model(0, *popt)
-        p    = popt
-        
-        self.__data[l].setdefault(tag,{})
-        self.__data[l][tag].update({tag       : X/self.__pars['ncell'],
-                                    tag+'fit' : Xfit/self.__pars['ncell'],
-                                    tag+'0'   : X0/self.__pars['ncell'],
-                                    'freq'    : f,
-                                    'freq_fit': f_fit,
-                                    'p'       : p/self.__pars['ncell']})
         return
 
 
@@ -344,8 +304,71 @@ class Z0zer(object):
         return
 
 
+from functools import partial
+class CellFitter(object):
 
+    def __init__(self, ncells, nterms, guess=None, nfit=1000):
 
+        self.__ncells = int(abs(np.round(ncells)))
+        self.__nterms = int(abs(np.round(nterms)))
+        self.__guess  = guess
+        self.__nfit   = nfit
+
+        self.__res = dict()
+        
+        return
+    
+    def model(self, tag='L'):
+
+        def modelC(x, C, L, n, terms=0):
+            return C*n*45/(45 - 15*(2*np.pi*x*n)**2*(L*C)
+                              -    (2*np.pi*x*n)**4*(L*C)**2
+                           )
+            
+        def modelL(x, C, L, n, terms=0):
+            if abs(terms)==0:
+                return  L*n*(1 + 1/3  *(2*np.pi*x*n)**2*L*C)  
+
+            elif abs(terms)==1: 
+                return  L*n*(1 + 1/3  *(2*np.pi*x*n)**2*L*C
+                               + 2/5  *(2*np.pi*x*n)**4*(L*C)**2)  
+            
+            elif abs(terms)>1:
+                return  L*n*(1 + 1/3  *(2*np.pi*x*n)**2*L*C
+                               + 2/5  *(2*np.pi*x*n)**4*(L*C)**2
+                               + 17/35*(2*np.pi*x*n)**6*(L*C)**3
+                             )
+        
+        model = {'C': modelC,
+                 'L': modelL}.get(tag)
+                        
+
+        return partial(model, n=self.__ncells, terms=self.__nterms)
+    
+    def fit(self, f, X, tag='L', **kwargs):
+
+                
+        from scipy.optimize import curve_fit
+        popt, pcov = curve_fit(self.model(tag), f, X, p0=self.__guess, **kwargs)
+
+        f_fit  = np.linspace(0, np.max(f), self.__nfit);
+        Xfit = self.model(tag)(f_fit, *popt)
+        X0   = self.model(tag)(0,     *popt)
+        
+        self.__res.update({tag       : X/self.__ncells,
+                           tag+'fit' : Xfit/self.__ncells,
+                           tag+'0'   : X0/self.__ncells,
+                           'freq'    : f,
+                           'freq_fit': f_fit,
+                          #'p'       : p/self.__ncells,
+                           'p'       : popt})
+        
+        return
+
+    def results(self):
+        return self.__res
+    
+    
 class CellZer(object):
     '''
 

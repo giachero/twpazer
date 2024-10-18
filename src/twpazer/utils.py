@@ -242,3 +242,68 @@ class utils(object):
             
         
         return TL.get(tag, TL)
+
+
+    
+
+    def dBm2watt(dBm, Z=50, R=50):
+        '''
+        dBm to watt
+
+        '''
+        return 10**(dBm/10)/1000
+    
+    def dBm2voltage(dBm, Z=50, R=50):
+        '''
+        dBm to voltage
+
+        '''
+        return np.sqrt(Z/1000)*10**(dBm/20)
+
+    def dBm2current(dBm, Z=50, R=50):
+        '''
+        dBm to current
+        
+        '''
+        return np.sqrt(Z/1000)*10**(dBm/20)/R
+
+
+    def current2dBm(I, Z=50,R=50):
+        '''
+        current to dBm
+        
+        '''
+        return 20*np.log10((I*R)/np.sqrt(Z/1000))
+
+    
+    def voltage2dBm(V, Z=50, R=50):
+        '''
+        voltage to dBm
+        
+        '''
+        return 20*np.log10(V/np.sqrt(Z/1000))
+
+
+    def watt2dBm(W, Z=50, R=50):
+        '''
+        watt to dBm
+        
+        '''
+        return 10*np.log10(1000*W)
+    
+
+    def toMag(i, r, isdB=False):
+        '''
+        From imaginary to mangitude 
+
+        '''
+        return 20*np.log10(np.sqrt(i**2+r**2)) if isdB else np.sqrt(i**2+r**2)
+
+
+    def toS21(I, Q, isdB=False):
+        '''
+        From I, Q to S21
+
+        '''
+        return rfutils.toMag(I,Q, isdB) 
+

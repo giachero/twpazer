@@ -9,11 +9,8 @@
           Usage: ./create_KIT.py --cfg path/where/cfgfile/is/cfgfile.json 
 '''
 
-from twpazer.sazer import Z0zer, CellZer
-from dartwarslab.base import dic2file, file2dic
-
-#from dartwarslab.azer import Z0zer, CellZer
-#from dartwarslab.base import dic2file, file2dic
+from twpazer.sazer   import Z0zer, CellZer
+from twpazer.freader import dic2file, file2dic
 
 import numpy as np
 
