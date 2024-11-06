@@ -131,8 +131,8 @@ class Z0zer(object):
         print('({name}) Fitting {x} vs freq, {target} = {l}'.format(name = whoami(), x=tag, l=l, target=self.__pars['target']))
         
 
-        guess = {'modelC': np.array([10e-15, 60e-15] if 'Cguess' not in self.__pars else self.__pars['Cguess']),
-                 'modelL': np.array([10e-12, 40e-12] if 'Lguess' not in self.__pars else self.__pars['Lguess'])}.get('model'+tag)
+        guess = {'modelC': np.array([10e-15, 40e-15] if 'Cguess' not in self.__pars else self.__pars['Cguess']),
+                 'modelL': np.array([10e-12, 60e-12] if 'Lguess' not in self.__pars else self.__pars['Lguess'])}.get('model'+tag)
         
 
         fitter = CellFitter(ncells = self.__pars['ncell'],
