@@ -89,8 +89,9 @@ class Z0zer(object):
             
             f     = self.__data[l]['Z']['freq']
             p     = np.poly1d(np.polyfit(f , Z, self.__pars['npol']))
-            f_fit = np.linspace(np.min(f), np.max(f), self.__pars['nfit']);
-
+            #f_fit = np.linspace(np.min(f), np.max(f), self.__pars['nfit']);
+            f_fit  = np.linspace(0, np.max(f), self.__pars['nfit']);
+            
             self.__data[l]['Z'].update({'Zfit'    : p(f_fit)})
             self.__data[l]['Z'].update({'freq_fit': f_fit})
             self.__data[l]['Z'].update({'p': p.coef})

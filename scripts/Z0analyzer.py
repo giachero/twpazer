@@ -112,12 +112,16 @@ def Z0analyzer(cfg):
                 savename=os.path.join(cfg[c]['saveplot'], 'trend_Z_vs_'+target+'_'+Z0res._Z0zer__create_savename()+'_target.'+e)
                 print ('({name}) Saving plot {savename}'.format(name = whoami(), savename=savename))
                 plt.gcf().savefig(savename, bbox_inches='tight', transparent=True)
-                
+
             savename=os.path.join(os.path.join(cfg[c]['savepath'], Z0res._Z0zer__create_savename()+'.h5'))
             print ('({name}) Saving results {savename}'.format(name = whoami(), savename=savename))
             dic2file(savename).save({'fit' : Z0res.results()['Z0fit'], 
                                      'pars': Z0res.pars(),
                                      'l'   : {k: v for k, v in Z0res.results().items() if type(k) != str }})
+
+            savename=os.path.join(os.path.join(cfg[c]['savepath'], Z0res._Z0zer__create_savename()+'_all_results.h5'))
+            print ('({name}) Saving results {savename}'.format(name = whoami(), savename=savename))
+            dic2file(savename).save(Z0res.results())
             
             savename=os.path.join(os.path.join(cfg[c]['savepath'], Z0res._Z0zer__create_savename()+'_reduced.h5'))
             print ('({name}) Saving results {savename}'.format(name = whoami(), savename=savename))
