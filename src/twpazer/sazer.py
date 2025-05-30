@@ -244,7 +244,7 @@ class Z0zer(object):
         plt.xlabel('Frequency $f$ [MHz]')
 
         #create_cbar(sm, 1, r'Finger Length $\ell$ [$\mu$m]')
-        create_cbar(sm, 1, r'{tname} {tvar} [{tunit}]'.format(tname = self.__pars['tname'],
+        create_cbar(sm, 2, r'{tname} {tvar} [{tunit}]'.format(tname = self.__pars['tname'],
                                                               tvar  = self.__pars['tvar'],
                                                               tunit = self.__pars['tunit']))
         

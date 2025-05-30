@@ -97,12 +97,15 @@ def Z0analyzer(cfg):
                     plt.axhline(y=Z0, color='black', lw=0.9, ls='--')
                     plt.axvline(x=l,  color='black', lw=0.9, ls='--')
 
-                    xtext=plt.gca().get_xlim()[1]-0.20*(plt.gca().get_xlim()[1]-plt.gca().get_xlim()[0])
-                    plt.text(xtext, Z0+4, '$Z_0 = {Z:.1f}\\,\\Omega$'.format(Z=Z0))
+                    xtext = plt.gca().get_xlim()[1]-0.20*(plt.gca().get_xlim()[1]-plt.gca().get_xlim()[0])
+                    ytext = Z0+0.02*(plt.gca().get_ylim()[1]-plt.gca().get_ylim()[0])
+
+                    plt.text(xtext, ytext,
+                             '$Z_0 = {Z:.1f}\\,\\Omega$'.format(Z=Z0))
                     
-                    ytext=plt.gca().get_ylim()[1]-0.25*(plt.gca().get_ylim()[1]-plt.gca().get_ylim()[0])
-                    plt.text(l+0.50,
-                             Z0+4,
+                    #xtext = l+0.02*(plt.gca().get_xlim()[1]-plt.gca().get_xlim()[0])
+                    ytext = Z0-0.04*(plt.gca().get_ylim()[1]-plt.gca().get_ylim()[0])
+                    plt.text(xtext, ytext,
                              '{tvar} = {l:0.2f} {tunit}'.format(tvar  = Z0res.pars()['tvar'],
                                                                 tunit = Z0res.pars()['tunit'],
                                                                 l     = l))
