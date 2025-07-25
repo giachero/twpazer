@@ -74,7 +74,8 @@ def Z0analyzer(cfg):
                          tname  = target,
                          tunit  = Z0res.pars()['tunit'])
 
-            cell.update(Lk = Z0res.pars()['Lk']*1e-12, w = Z0res.pars()['w'])
+            cell.update(Lk = Z0res.pars()['Lk']*1e-12 if 'Lk' in Z0res.pars() else 0,
+                        w  = Z0res.pars()['w'])
 
             restarget={}
             for Z in cfg[c]['Ztarget']:

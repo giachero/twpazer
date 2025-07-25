@@ -284,12 +284,13 @@ class Z0zer(object):
 
     def __create_title(self, titlestr=''):
 
+        
         varconverter={'Lk':'L_k', 't' :'t', 'w' :'w', 's' :'s','d' :'d', 'eps': '\\varepsilon_r'}
         
         for l, u in zip(['Lk', 't', 'w', 's',  'd', 'eps'], ['pH/sq', 'nm', '$\\mu$m', '$\\mu$m',  'nm', '']):
             if l in self.__pars:
                 titlestr+=r'${l}={v}$ {u} , '.format(l=varconverter[l], v=self.__pars[l], u=u)
-
+                
         return titlestr[:-3]
 
     def __create_savename(self, savename=''):
