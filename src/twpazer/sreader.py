@@ -183,6 +183,7 @@ class sidreader(object):
                 if 'pars' not in self.__data[i]: 
                     self.__data[i].setdefault('pars', {})
 
+                self.__data[i]['pars'].update({'freq': utils.snp2S(self.__data[i]['data'], 'freq')})
                 self.__data[i]['pars'].update({'Z0'+tag  : np.sqrt(self.__data[i][tag][:,3]**2+self.__data[i][tag][:,4]**2)})
                 self.__data[i]['pars'].update({'Eeff'+tag: np.sqrt(self.__data[i][tag][:,1]**2+self.__data[i][tag][:,2]**2)})
 

@@ -305,5 +305,5 @@ class utils(object):
         From I, Q to S21
 
         '''
-        return rfutils.toMag(I,Q, isdB) 
+        return utils.toMag(I,Q, isdB) 
 
